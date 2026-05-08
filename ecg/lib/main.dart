@@ -3,53 +3,56 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(const BpmApp());
+  runApp(const Spo2App());
 }
 
-const Color _heartRed = Color(0xFFC1221F);
+const Color _primaryColor = Color(0xFF34758A);
 const Color _pageBackground = Color(0xFFFFFFFF);
-const String _heartAsset = 'assets/images/logo_bpm.png';
+const String _logoAsset = 'assets/images/logo_spo2.png';
 
-class BpmApp extends StatelessWidget {
-  const BpmApp({super.key});
+class Spo2App extends StatelessWidget {
+  const Spo2App({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'BPM',
+      title: 'SpO2',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: _heartRed),
+        colorScheme: ColorScheme.fromSeed(seedColor: _primaryColor),
         fontFamily: 'Arial',
         scaffoldBackgroundColor: _pageBackground,
         useMaterial3: true,
       ),
-      home: const HeartRateScreen(),
+      home: const Spo2Screen(),
     );
   }
 }
 
-class HeartRateScreen extends StatefulWidget {
-  const HeartRateScreen({super.key});
+class Spo2Screen extends StatefulWidget {
+  const Spo2Screen({super.key});
 
   @override
-  State<HeartRateScreen> createState() => _HeartRateScreenState();
+  State<Spo2Screen> createState() => _Spo2ScreenState();
 }
 
-class _HeartRateScreenState extends State<HeartRateScreen> {
-  double _bpm = 80;
+class _Spo2ScreenState extends State<Spo2Screen> {
+  double _spo2 = 98;
   bool _showSplash = true;
 
-  int get _roundedBpm => _bpm.round();
+  int get _roundedSpo2 => _spo2.round();
 
-  PulseStatus get _status {
-    if (_roundedBpm <= 60) {
-      return PulseStatus.tired;
+  Spo2Status get _status {
+    if (_roundedSpo2 >= 95) {
+      return Spo2Status.optimal;
     }
-    if (_roundedBpm >= 121) {
-      return PulseStatus.alert;
+    if (_roundedSpo2 >= 91) {
+      return Spo2Status.watch;
     }
-    return PulseStatus.healthy;
+    if (_roundedSpo2 >= 86) {
+      return Spo2Status.alert;
+    }
+    return Spo2Status.critical;
   }
 
   @override
@@ -65,9 +68,9 @@ class _HeartRateScreenState extends State<HeartRateScreen> {
                 )
               : HeartRateDashboard(
                   key: const ValueKey('dashboard'),
-                  bpm: _roundedBpm,
+                  spo2: _roundedSpo2,
                   status: _status,
-                  onBpmChanged: (value) => setState(() => _bpm = value),
+                  onSpo2Changed: (value) => setState(() => _spo2 = value),
                 ),
         ),
       ),
@@ -86,12 +89,12 @@ class SplashView extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const BpmLogo(size: 132, labelSize: 52),
+          const Spo2Logo(size: 150),
           const SizedBox(height: 42),
           FilledButton(
             onPressed: onStart,
             style: FilledButton.styleFrom(
-              backgroundColor: _heartRed,
+              backgroundColor: _primaryColor,
               foregroundColor: Colors.white,
               minimumSize: const Size(180, 54),
               shape: RoundedRectangleBorder(
@@ -114,14 +117,14 @@ class SplashView extends StatelessWidget {
 class HeartRateDashboard extends StatelessWidget {
   const HeartRateDashboard({
     super.key,
-    required this.bpm,
+    required this.spo2,
     required this.status,
-    required this.onBpmChanged,
+    required this.onSpo2Changed,
   });
 
-  final int bpm;
-  final PulseStatus status;
-  final ValueChanged<double> onBpmChanged;
+  final int spo2;
+  final Spo2Status status;
+  final ValueChanged<double> onSpo2Changed;
 
   @override
   Widget build(BuildContext context) {
@@ -142,9 +145,9 @@ class HeartRateDashboard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const BpmLogo(size: 38, labelSize: 18),
+                const Spo2Logo(size: 48),
                 const SizedBox(height: 18),
-                BpmCard(bpm: bpm),
+                Spo2Card(spo2: spo2),
                 const SizedBox(height: 26),
                 Center(
                   child: CapybaraStatus(
@@ -153,9 +156,9 @@ class HeartRateDashboard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                BpmSlider(
-                  bpm: bpm,
-                  onChanged: onBpmChanged,
+                Spo2Slider(
+                  spo2: spo2,
+                  onChanged: onSpo2Changed,
                 ),
               ],
             ),
@@ -166,42 +169,33 @@ class HeartRateDashboard extends StatelessWidget {
   }
 }
 
-class BpmLogo extends StatelessWidget {
-  const BpmLogo({
+class Spo2Logo extends StatelessWidget {
+  const Spo2Logo({
     super.key,
     required this.size,
-    this.labelSize,
   });
 
   final double size;
-  final double? labelSize;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox.square(
       dimension: size,
       child: Image.asset(
-        _heartAsset,
+        _logoAsset,
         fit: BoxFit.contain,
         errorBuilder: (context, error, stackTrace) {
-          return Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(child: CustomPaint(painter: HeartPainter())),
-              if (labelSize != null) ...[
-                SizedBox(width: math.max(4, size * 0.06)),
-                Text(
-                  'bpm',
-                  style: TextStyle(
-                    color: _heartRed,
-                    fontSize: labelSize,
-                    fontWeight: FontWeight.w900,
-                    height: 0.9,
-                  ),
-                ),
-              ],
-            ],
+          return Center(
+            child: Text(
+              '%\nSpO2',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: _primaryColor,
+                fontSize: size * 0.28,
+                fontWeight: FontWeight.w900,
+                height: 0.9,
+              ),
+            ),
           );
         },
       ),
@@ -209,10 +203,10 @@ class BpmLogo extends StatelessWidget {
   }
 }
 
-class BpmCard extends StatelessWidget {
-  const BpmCard({super.key, required this.bpm});
+class Spo2Card extends StatelessWidget {
+  const Spo2Card({super.key, required this.spo2});
 
-  final int bpm;
+  final int spo2;
 
   @override
   Widget build(BuildContext context) {
@@ -221,13 +215,13 @@ class BpmCard extends StatelessWidget {
       constraints: const BoxConstraints(minHeight: 92),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
       decoration: BoxDecoration(
-        color: _heartRed,
+        color: _primaryColor,
         borderRadius: BorderRadius.circular(28),
       ),
       child: FittedBox(
         fit: BoxFit.scaleDown,
         child: Text(
-          '$bpm  bpm',
+          '$spo2 % SpO2',
           maxLines: 1,
           style: const TextStyle(
             color: Colors.white,
@@ -241,14 +235,14 @@ class BpmCard extends StatelessWidget {
   }
 }
 
-class BpmSlider extends StatelessWidget {
-  const BpmSlider({
+class Spo2Slider extends StatelessWidget {
+  const Spo2Slider({
     super.key,
-    required this.bpm,
+    required this.spo2,
     required this.onChanged,
   });
 
-  final int bpm;
+  final int spo2;
   final ValueChanged<double> onChanged;
 
   @override
@@ -265,18 +259,18 @@ class BpmSlider extends StatelessWidget {
         ),
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
-            activeTrackColor: _heartRed,
-            inactiveTrackColor: _heartRed.withValues(alpha: 0.18),
-            thumbColor: _heartRed,
-            overlayColor: _heartRed.withValues(alpha: 0.12),
-            valueIndicatorColor: _heartRed,
+            activeTrackColor: _primaryColor,
+            inactiveTrackColor: _primaryColor.withValues(alpha: 0.18),
+            thumbColor: _primaryColor,
+            overlayColor: _primaryColor.withValues(alpha: 0.12),
+            valueIndicatorColor: _primaryColor,
           ),
           child: Slider(
-            value: bpm.toDouble(),
-            min: 40,
-            max: 160,
-            divisions: 120,
-            label: '$bpm bpm',
+            value: spo2.toDouble(),
+            min: 80,
+            max: 100,
+            divisions: 20,
+            label: '$spo2 % SpO2',
             onChanged: onChanged,
           ),
         ),
@@ -292,7 +286,7 @@ class CapybaraStatus extends StatelessWidget {
     required this.size,
   });
 
-  final PulseStatus status;
+  final Spo2Status status;
   final double size;
 
   @override
@@ -314,7 +308,7 @@ class CapybaraStatus extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          status.label,
+          status.characterLabel,
           textAlign: TextAlign.center,
           style: const TextStyle(
             color: Colors.black,
@@ -323,18 +317,47 @@ class CapybaraStatus extends StatelessWidget {
             letterSpacing: 0,
           ),
         ),
+        const SizedBox(height: 2),
+        Text(
+          status.healthLabel,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: Colors.black,
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0,
+          ),
+        ),
       ],
     );
   }
 }
 
-enum PulseStatus {
-  tired('Achicopalado', 'assets/images/achicopalado.png'),
-  healthy('Sano como manzano', 'assets/images/manzano.png'),
-  alert('Aaahhh!!!', 'assets/images/aahhh.png');
+enum Spo2Status {
+  optimal(
+    'Sano como Manzano',
+    '\u00F3ptimo',
+    'assets/images/manzano.png',
+  ),
+  watch(
+    'Achicopalado',
+    'vigilar',
+    'assets/images/achicopalao.png',
+  ),
+  alert(
+    'ahhhh',
+    'alerta',
+    'assets/images/ahhhhh.png',
+  ),
+  critical(
+    'AAHHH',
+    'Se recomienda consultar a un m\u00E9dico',
+    'assets/images/AAHH.png',
+  );
 
-  const PulseStatus(this.label, this.assetPath);
-  final String label;
+  const Spo2Status(this.characterLabel, this.healthLabel, this.assetPath);
+  final String characterLabel;
+  final String healthLabel;
   final String assetPath;
 }
 
@@ -348,7 +371,7 @@ class HeartPainter extends CustomPainter {
     canvas.scale(scaleX, scaleY);
 
     final body = Paint()
-      ..color = _heartRed
+      ..color = _primaryColor
       ..style = PaintingStyle.fill;
     final shade = Paint()
       ..color = const Color(0xFF8B1816).withValues(alpha: 0.55)
@@ -426,7 +449,7 @@ class HeartPainter extends CustomPainter {
 class CapybaraPainter extends CustomPainter {
   CapybaraPainter(this.status);
 
-  final PulseStatus status;
+  final Spo2Status status;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -437,13 +460,14 @@ class CapybaraPainter extends CustomPainter {
     canvas.scale(sx, sy);
 
     switch (status) {
-      case PulseStatus.tired:
+      case Spo2Status.watch:
         _drawTired(canvas);
         break;
-      case PulseStatus.healthy:
+      case Spo2Status.optimal:
         _drawHealthy(canvas);
         break;
-      case PulseStatus.alert:
+      case Spo2Status.alert:
+      case Spo2Status.critical:
         _drawAlert(canvas);
         break;
     }
