@@ -1,7 +1,8 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
-
+import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
 void main() {
   runApp(const Spo2App());
 }
@@ -40,6 +41,11 @@ class _Spo2ScreenState extends State<Spo2Screen> {
   double _spo2 = 98;
   bool _showSplash = true;
 
+  BluetoothConnection? _connection;
+  bool _isConnected = false;
+  String _btStatus = 'Desconectado';
+  String _buffer = '';
+
   int get _roundedSpo2 => _spo2.round();
 
   Spo2Status get _status {
@@ -53,6 +59,105 @@ class _Spo2ScreenState extends State<Spo2Screen> {
       return Spo2Status.alert;
     }
     return Spo2Status.critical;
+  }
+
+  Future<void> _connectToHC05() async {
+  setState(() => _btStatus = 'Buscando...');
+
+  try {
+    // 1. Obtener lista de dispositivos vinculados
+    List<BluetoothDevice> devices = await FlutterBluetoothSerial.instance.getBondedDevices();
+    
+    // --- NUEVO: DEPURACIÓN ---
+    // Mira tu consola en VS Code/Android Studio. Si no sale nada aquí, 
+    // el problema son los permisos del celular o el GPS apagado.
+    for (var d in devices) {
+      debugPrint('App detectó vinculado: "${d.name}" con dirección: ${d.address}');
+    }
+    // -------------------------
+
+    // 2. Buscar de forma ultra-flexible
+    BluetoothDevice? hc05;
+    try {
+      hc05 = devices.firstWhere((d) {
+        // Limpiamos el nombre: quitamos espacios y pasamos a MAYÚSCULAS
+        String deviceName = d.name?.replaceAll(' ', '').toUpperCase() ?? '';
+        // Buscamos cualquier coincidencia con HC05 o HC-05
+        return deviceName.contains('HC05') || deviceName.contains('HC-05');
+      });
+    } catch (e) {
+      hc05 = null;
+    }
+
+    if (hc05 == null) {
+      // Cambio de mensaje para darte más pistas
+      setState(() => _btStatus = devices.isEmpty 
+          ? 'Error: Lista vacía (Permisos/GPS?)' 
+          : 'HC-05 no hallado en lista');
+      return;
+    }
+
+    // 3. Intentar conexión
+    setState(() => _btStatus = 'Conectando a ${hc05!.name}...');
+    
+    // Aumentamos un poco el timeout por si el módulo tarda en responder
+    final connection = await BluetoothConnection.toAddress(hc05.address).timeout(
+      const Duration(seconds: 15),
+    );
+
+    setState(() {
+      _connection = connection;
+      _isConnected = true;
+      _btStatus = 'Conectado ✓';
+    });
+
+    _connection!.input!.listen((Uint8List data) {
+      _buffer += utf8.decode(data);
+      if (_buffer.contains('\n')) {
+        final lines = _buffer.split('\n');
+        _buffer = lines.last;
+        for (int i = 0; i < lines.length - 1; i++) {
+          if (lines[i].trim().isNotEmpty) {
+            _parseLine(lines[i].trim());
+          }
+        }
+      }
+    }).onDone(() {
+      if (mounted) {
+        setState(() {
+          _isConnected = false;
+          _btStatus = 'Desconectado';
+        });
+      }
+    });
+  } catch (e) {
+    debugPrint('Error de Bluetooth: $e');
+    if (mounted) {
+      // Mostramos el error real en pantalla para saber qué falló (ej. Timeout o Permission Denied)
+      setState(() => _btStatus = 'Error: $e');
+    }
+  }
+}
+ 
+  void _parseLine(String line) {
+    // Formato esperado: "HR:72|SPO2:98"
+    try {
+      final spo2Part = line.split('|').firstWhere((p) => p.startsWith('SPO2:'));
+      final spo2 = double.tryParse(spo2Part.replaceFirst('SPO2:', '').trim());
+ 
+      if (spo2 != null && spo2 >= 80 && spo2 <= 100) {
+        setState(() => _spo2 = spo2);
+      }
+      // Si llega -1 (lectura inválida), ignoramos y mantenemos el último valor
+    } catch (_) {
+      // línea malformada, ignorar
+    }
+  }
+ 
+  @override
+  void dispose() {
+    _connection?.dispose();
+    super.dispose();
   }
 
   @override
@@ -71,6 +176,9 @@ class _Spo2ScreenState extends State<Spo2Screen> {
                   spo2: _roundedSpo2,
                   status: _status,
                   onSpo2Changed: (value) => setState(() => _spo2 = value),
+                  isConnected: _isConnected,
+                  btStatus: _btStatus,
+                  onConnect: _connectToHC05,
                 ),
         ),
       ),
@@ -120,11 +228,17 @@ class HeartRateDashboard extends StatelessWidget {
     required this.spo2,
     required this.status,
     required this.onSpo2Changed,
+    required this.isConnected,
+    required this.btStatus,
+    required this.onConnect,
   });
 
   final int spo2;
   final Spo2Status status;
   final ValueChanged<double> onSpo2Changed;
+  final bool isConnected;
+  final String btStatus;
+  final VoidCallback onConnect;
 
   @override
   Widget build(BuildContext context) {
@@ -156,15 +270,57 @@ class HeartRateDashboard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                Spo2Slider(
-                  spo2: spo2,
-                  onChanged: onSpo2Changed,
+                BtStatusBar(
+                  status: btStatus,
+                  isConnected: isConnected,
+                  onConnect: onConnect,
                 ),
+                const SizedBox(height: 12),
+                Spo2Slider(
+                 spo2: spo2,
+                  onChanged: isConnected
+                      ? null
+                      : onSpo2Changed,
+                  ),
               ],
             ),
           ),
         );
       },
+    );
+  }
+}
+class BtStatusBar extends StatelessWidget {
+  const BtStatusBar({
+    super.key,
+    required this.status,
+    required this.isConnected,
+    required this.onConnect,
+  });
+ 
+  final String status;
+  final bool isConnected;
+  final VoidCallback onConnect;
+ 
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(
+          isConnected ? Icons.bluetooth_connected : Icons.bluetooth_disabled,
+          color: isConnected ? Colors.green : Colors.grey,
+        ),
+        const SizedBox(width: 8),
+        Text(status),
+        const Spacer(),
+        if (!isConnected)
+          FilledButton.icon(
+            onPressed: onConnect,
+            icon: const Icon(Icons.bluetooth),
+            label: const Text('Conectar HC-05'),
+            style: FilledButton.styleFrom(backgroundColor: _primaryColor),
+          ),
+      ],
     );
   }
 }
@@ -243,7 +399,7 @@ class Spo2Slider extends StatelessWidget {
   });
 
   final int spo2;
-  final ValueChanged<double> onChanged;
+  final ValueChanged<double>? onChanged;
 
   @override
   Widget build(BuildContext context) {
