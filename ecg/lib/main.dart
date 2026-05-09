@@ -74,15 +74,10 @@ class _Spo2ScreenState extends State<Spo2Screen> {
     for (var d in devices) {
       debugPrint('App detectó vinculado: "${d.name}" con dirección: ${d.address}');
     }
-    // -------------------------
-
-    // 2. Buscar de forma ultra-flexible
     BluetoothDevice? hc05;
     try {
       hc05 = devices.firstWhere((d) {
-        // Limpiamos el nombre: quitamos espacios y pasamos a MAYÚSCULAS
         String deviceName = d.name?.replaceAll(' ', '').toUpperCase() ?? '';
-        // Buscamos cualquier coincidencia con HC05 o HC-05
         return deviceName.contains('HC05') || deviceName.contains('HC-05');
       });
     } catch (e) {
@@ -90,17 +85,14 @@ class _Spo2ScreenState extends State<Spo2Screen> {
     }
 
     if (hc05 == null) {
-      // Cambio de mensaje para darte más pistas
       setState(() => _btStatus = devices.isEmpty 
           ? 'Error: Lista vacía (Permisos/GPS?)' 
           : 'HC-05 no hallado en lista');
       return;
     }
 
-    // 3. Intentar conexión
     setState(() => _btStatus = 'Conectando a ${hc05!.name}...');
     
-    // Aumentamos un poco el timeout por si el módulo tarda en responder
     final connection = await BluetoothConnection.toAddress(hc05.address).timeout(
       const Duration(seconds: 15),
     );
@@ -108,7 +100,7 @@ class _Spo2ScreenState extends State<Spo2Screen> {
     setState(() {
       _connection = connection;
       _isConnected = true;
-      _btStatus = 'Conectado ✓';
+      _btStatus = 'Conectado';
     });
 
     _connection!.input!.listen((Uint8List data) {
@@ -133,14 +125,12 @@ class _Spo2ScreenState extends State<Spo2Screen> {
   } catch (e) {
     debugPrint('Error de Bluetooth: $e');
     if (mounted) {
-      // Mostramos el error real en pantalla para saber qué falló (ej. Timeout o Permission Denied)
       setState(() => _btStatus = 'Error: $e');
     }
   }
 }
  
   void _parseLine(String line) {
-    // Formato esperado: "HR:72|SPO2:98"
     try {
       final spo2Part = line.split('|').firstWhere((p) => p.startsWith('SPO2:'));
       final spo2 = double.tryParse(spo2Part.replaceFirst('SPO2:', '').trim());
@@ -148,9 +138,7 @@ class _Spo2ScreenState extends State<Spo2Screen> {
       if (spo2 != null && spo2 >= 80 && spo2 <= 100) {
         setState(() => _spo2 = spo2);
       }
-      // Si llega -1 (lectura inválida), ignoramos y mantenemos el último valor
     } catch (_) {
-      // línea malformada, ignorar
     }
   }
  
