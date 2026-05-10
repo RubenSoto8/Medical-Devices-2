@@ -305,7 +305,11 @@ class BtStatusBar extends StatelessWidget {
           FilledButton.icon(
             onPressed: onConnect,
             icon: const Icon(Icons.bluetooth),
-            label: const Text('Conectar HC-05'),
+            label: Text(
+            MediaQuery.of(context).size.width < 380
+                ? 'Conectar'
+                : 'Conectar HC-05',
+          ),
             style: FilledButton.styleFrom(backgroundColor: _primaryColor),
           ),
       ],
