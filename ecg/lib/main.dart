@@ -18,7 +18,7 @@ class Spo2App extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'SpO2',
+      title: 'Oxibara 3000',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: _primaryColor),
         fontFamily: 'Arial',
