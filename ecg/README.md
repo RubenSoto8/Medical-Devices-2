@@ -1,17 +1,25 @@
-# ecg
+# OXIBARA
+OXIBARA es una aplicación móvil para visualizar los niveles de saturación de oxígeno en tiempo real mediante comunicación BlueTooth. La medición se realizó con un sensor MAX30102 y la comunicación se logró mediante un módulo HC-05.
 
-A new Flutter project.
+La aplicación recibe valores de Spo2 en tiempo real y actualiza automáticamente la interfaz gráfica.Además, se diseñó con un enfoque amigable al utilziar indicadores visuales dinámicos y capibaras que representaran el estado de oxigenación del usuario.
 
-## Getting Started
+Variables recibidas:
+-Saturación de oxígeno (SpO2)
+-Frecuencia cardíaca (Heart Rate) (opcional para futuras implementaciones)
 
-This project is a starting point for a Flutter application.
+Hardware utilizado:
+-MAX30102: Sensor biomédico que permite obtener la oxigenación en sangre y frecuencia cardiaca
+-HC-05: Módulo utilizado para la comunicación BT
+-ESP-32: Microprocesador que procesa y envías los datos vía BT
 
-A few resources to get you started if this is your first Flutter project:
+Estados de Spo2:
+| Rango      | Estado     |
+| ---------- | ---------- |
+| 95% - 100% | Óptimo     |
+| 91% - 94%  | Vigilancia |
+| 86% - 90%  | Alerta     |
+|   < 86%    | Crítico    |
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Link del video DEMO:
+https://drive.google.com/file/d/1JoPOsWsl6Cuxxcg49uOqU-TfG1j2Oi-R/view?usp=drivesdk
