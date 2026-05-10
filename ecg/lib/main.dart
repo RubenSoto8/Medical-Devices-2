@@ -151,7 +151,20 @@ class _Spo2ScreenState extends State<Spo2Screen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
+  appBar: AppBar(
+    centerTitle: true,
+    backgroundColor: Colors.transparent,
+    elevation: 0,
+    title: const Text(
+      'OxiBara',
+      style: TextStyle(
+        color: _primaryColor,
+        fontWeight: FontWeight.w900,
+        fontSize: 24,
+      ),
+    ),
+  ),
+  body: SafeArea(
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 450),
           child: _showSplash
