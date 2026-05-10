@@ -18,7 +18,7 @@ class Spo2App extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'SpO2',
+      title: 'Oxibara 3000',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: _primaryColor),
         fontFamily: 'Arial',
@@ -151,7 +151,20 @@ class _Spo2ScreenState extends State<Spo2Screen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
+  appBar: AppBar(
+    centerTitle: true,
+    backgroundColor: Colors.transparent,
+    elevation: 0,
+    title: const Text(
+      'OxiBara',
+      style: TextStyle(
+        color: _primaryColor,
+        fontWeight: FontWeight.w900,
+        fontSize: 24,
+      ),
+    ),
+  ),
+  body: SafeArea(
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 450),
           child: _showSplash
@@ -305,7 +318,11 @@ class BtStatusBar extends StatelessWidget {
           FilledButton.icon(
             onPressed: onConnect,
             icon: const Icon(Icons.bluetooth),
-            label: const Text('Conectar HC-05'),
+            label: Text(
+            MediaQuery.of(context).size.width < 380
+                ? 'Conectar'
+                : 'Conectar HC-05',
+          ),
             style: FilledButton.styleFrom(backgroundColor: _primaryColor),
           ),
       ],
